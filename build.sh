@@ -22,9 +22,35 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Baba"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+if [ -f Resources/AppIcon.icns ]; then
+  cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+fi
 codesign --force --sign - --timestamp=none "$APP" >/dev/null 2>&1 || \
   echo "    (ad-hoc signing failed; the app will still run)"
 echo "==> Built $APP"
+
+if [ "${1:-}" = "--dist" ]; then
+  VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+  ZIP="dist/Baba-$VERSION-arm64.zip"
+  rm -f "$ZIP"
+  # ditto preserves the signature and resource forks; `zip` does not.
+  ditto -c -k --keepParent --sequesterRsrc "$APP" "$ZIP"
+  echo "==> Packaged $ZIP ($(du -h "$ZIP" | cut -f1))"
+  cat <<'NOTE'
+
+    Apple silicon only, signed ad-hoc — Gatekeeper will not recognise it.
+    Copy it with scp or a USB drive (no quarantine flag), or clear the flag:
+
+        unzip Baba-*-arm64.zip -d /Applications
+        xattr -dr com.apple.quarantine /Applications/Baba.app
+        open /Applications/Baba.app
+
+    The templates are not bundled: run scripts/crawl.py on the target Mac, or
+    copy ~/Library/Application Support/Baba across.
+
+NOTE
+  exit 0
+fi
 
 if [ "${1:-}" = "--install" ]; then
   pkill -x Baba || true

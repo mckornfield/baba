@@ -10,6 +10,7 @@ imgflip and live on disk, so it works offline.
 ```sh
 scripts/crawl.py            # download the top 1000 templates (~15 min, resumable)
 ./build.sh --install        # build, install to /Applications, launch
+./build.sh --dist           # zip for another Mac (templates not included)
 ```
 
 `crawl.py` walks imgflip's template listing politely (a quarter-second between

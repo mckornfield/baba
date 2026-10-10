@@ -6,6 +6,8 @@
 	<string>Baba</string>
 	<key>CFBundleExecutable</key>
 	<string>Baba</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.mkornfield.baba</string>
 	<key>CFBundleName</key>
