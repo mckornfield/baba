@@ -45,7 +45,7 @@ if [ "${1:-}" = "--dist" ]; then
         xattr -dr com.apple.quarantine /Applications/Baba.app
         open /Applications/Baba.app
 
-    The templates are not bundled: run scripts/crawl.py on the target Mac, or
+    The templates are not bundled: click Download 1000 memes on first run, or
     copy ~/Library/Application Support/Baba across.
 
 NOTE

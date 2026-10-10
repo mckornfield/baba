@@ -22,6 +22,19 @@ if let i = args.firstIndex(of: "--render"), args.count > i + 1 {
     exit(ok ? 0 : 1)
 }
 
+// `Baba --crawl [COUNT]` runs the in-app downloader headlessly, for testing.
+if let i = args.firstIndex(of: "--crawl") {
+    let count = args.count > i + 1 ? Int(args[i + 1]) ?? 20 : 20
+    MainActor.assumeIsolated { Crawler.shared.start(count: count) }
+    // Pump the run loop: the crawler is main-actor isolated.
+    while MainActor.assumeIsolated({ Crawler.shared.running }) || MainActor.assumeIsolated({ Crawler.shared.done == 0 && Crawler.shared.failure == nil }) {
+        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    }
+    let (done, failure) = MainActor.assumeIsolated { (Crawler.shared.done, Crawler.shared.failure) }
+    print("downloaded \(done)\(failure.map { ", error: \($0)" } ?? "")")
+    exit(failure == nil ? 0 : 1)
+}
+
 MainActor.assumeIsolated {
     let application = NSApplication.shared
     application.delegate = AppController.shared
