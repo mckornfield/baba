@@ -2,7 +2,7 @@ import AppKit
 
 /// One caption. The rect is normalised to the image with a top-left origin, so
 /// the preview and the full-resolution export share the same layout.
-struct TextBox: Identifiable, Equatable {
+struct TextBox: Identifiable, Equatable, Codable {
     var id = UUID()
     var text = ""
     var rect: CGRect

@@ -1,16 +1,63 @@
 import SwiftUI
 
-/// Which screen the popover is on. Opening the panel always returns to the picker.
+/// Which screen the popover is on, and the memes in progress. Captions are kept
+/// per template and written to disk, so clicking away (or quitting) loses nothing.
 @MainActor
 final class Session: ObservableObject {
     static let shared = Session()
-    @Published var template: Template?
+
+    /// The meme being edited. Opening the panel returns to it; Back (or Esc)
+    /// leaves it, and the next open starts at the picker.
+    @Published var template: Template? {
+        didSet { if template?.id != oldValue?.id { persist() } }
+    }
     /// Bumped on every open so the search field can grab focus again.
     @Published var openCount = 0
 
-    func reset() {
-        template = nil
-        openCount += 1
+    private struct Saved: Codable {
+        var current: String?
+        var drafts: [String: [TextBox]]
+    }
+
+    private var drafts: [String: [TextBox]] = [:]
+    private var pending: Task<Void, Never>?
+    private static var file: URL { Library.root.appendingPathComponent("drafts.json") }
+
+    private init() {
+        guard let data = try? Data(contentsOf: Self.file),
+              let saved = try? JSONDecoder().decode(Saved.self, from: data)
+        else { return }
+        drafts = saved.drafts
+        template = saved.current.flatMap { id in Library.shared.templates.first { $0.id == id } }
+    }
+
+    /// Called as the panel opens. Stay on the meme in progress; the search box
+    /// only needs resetting when showing the picker.
+    func opened() { openCount += 1 }
+
+    func draft(for template: Template) -> [TextBox]? { drafts[template.id] }
+
+    func save(_ boxes: [TextBox], for template: Template) {
+        guard drafts[template.id] != boxes else { return }
+        drafts[template.id] = boxes
+        // Dragging changes this many times a second; the disk can wait.
+        pending?.cancel()
+        pending = Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            if !Task.isCancelled { persist() }
+        }
+    }
+
+    func discardDraft(for template: Template) {
+        drafts[template.id] = nil
+        persist()
+    }
+
+    func persist() {
+        let saved = Saved(current: template?.id, drafts: drafts)
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        try? FileManager.default.createDirectory(at: Library.root, withIntermediateDirectories: true)
+        try? data.write(to: Self.file, options: .atomic)
     }
 }
 

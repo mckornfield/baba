@@ -111,13 +111,15 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     @objc private func reload() { Library.shared.reload() }
 
+    func applicationWillTerminate(_ notification: Notification) { Session.shared.persist() }
+
     func togglePopover() {
         popover.isShown ? closePopover() : showPopover()
     }
 
     private func showPopover() {
         guard let button = statusItem.button else { return }
-        Session.shared.reset()
+        Session.shared.opened()
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()

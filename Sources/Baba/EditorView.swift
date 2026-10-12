@@ -19,8 +19,9 @@ struct EditorView: View {
                 Spacer()
                 Text(template.name).font(.headline).lineLimit(1)
                 Spacer()
-                Button { addBox() } label: { Label("Text", systemImage: "plus") }
+                Button { startOver() } label: { Image(systemName: "arrow.counterclockwise") }
                     .buttonStyle(.borderless)
+                    .help("Start over")
             }
 
             preview.frame(maxHeight: .infinity)
@@ -40,7 +41,7 @@ struct EditorView: View {
                     }
                 }
             }
-            .frame(maxHeight: 110)
+            .frame(maxHeight: 140)
 
             HStack {
                 Label("Drag to chat", systemImage: "hand.draw")
@@ -49,6 +50,8 @@ struct EditorView: View {
                     .background(.quaternary, in: Capsule())
                     .onDrag { dragProvider() }
                     .help("Drag the finished meme into any app")
+                Button { addBox() } label: { Label("Add text", systemImage: "plus") }
+                    .help("Add another caption box")
                 Spacer()
                 Button(copied ? "Copied" : "Copy") { copy() }
                     .keyboardShortcut(.return, modifiers: [])
@@ -58,8 +61,10 @@ struct EditorView: View {
         .padding(12)
         .onAppear {
             base = NSImage(contentsOf: library.fullURL(template))
+            if let draft = session.draft(for: template) { boxes = draft }
             focus = boxes.first?.id
         }
+        .onChange(of: boxes) { _, new in session.save(new, for: template) }
         .onChange(of: focus) { _, id in if let id { selected = id } }
     }
 
@@ -99,6 +104,13 @@ struct EditorView: View {
         focus = box.id
     }
 
+    private func startOver() {
+        boxes = TextBox.defaults()
+        selected = nil
+        focus = boxes.first?.id
+        session.discardDraft(for: template)
+    }
+
     private func remove(_ id: UUID) {
         boxes.removeAll { $0.id == id }
         if selected == id { selected = nil }
@@ -135,7 +147,7 @@ struct EditorView: View {
     }
 }
 
-/// The dashed frame over a caption: drag it to move, drag the corner to resize.
+/// The dashed frame over a caption: drag it to move, drag any corner dot to resize.
 struct BoxOverlay: View {
     @Binding var box: TextBox
     let canvas: CGSize
@@ -146,18 +158,16 @@ struct BoxOverlay: View {
     @State private var resizeStart: CGRect?
 
     private let minSide: CGFloat = 0.06
+    /// How far in from the box's corner a handle sits, so its hit area stays inside the frame.
+    private let inset: CGFloat = 12
 
     var body: some View {
         let w = box.rect.width * canvas.width
         let h = box.rect.height * canvas.height
-        ZStack(alignment: .bottomTrailing) {
+        ZStack {
             Rectangle()
                 .fill(Color.white.opacity(0.001))
-                .overlay(
-                    Rectangle()
-                        .strokeBorder(style: StrokeStyle(lineWidth: isSelected ? 1.5 : 1, dash: [5, 3]))
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.6))
-                )
+                .overlay(outline)
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
                         .onChanged { value in
@@ -172,27 +182,49 @@ struct BoxOverlay: View {
                         }
                         .onEnded { _ in dragStart = nil }
                 )
-            Circle()
-                .fill(Color.accentColor)
-                .overlay(Circle().stroke(.white, lineWidth: 1.5))
-                .frame(width: 12, height: 12)
-                .padding(2)
-                .gesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
-                        .onChanged { value in
-                            if resizeStart == nil { resizeStart = box.rect; onSelect() }
-                            guard let start = resizeStart else { return }
-                            let width = start.width + value.translation.width / canvas.width
-                            let height = start.height + value.translation.height / canvas.height
-                            box.rect.size = CGSize(
-                                width: min(max(width, minSide), 1 - start.minX),
-                                height: min(max(height, minSide), 1 - start.minY)
-                            )
-                        }
-                        .onEnded { _ in resizeStart = nil }
-                )
+            handle(sx: -1, sy: -1, in: CGSize(width: w, height: h))
+            handle(sx: 1, sy: -1, in: CGSize(width: w, height: h))
+            handle(sx: -1, sy: 1, in: CGSize(width: w, height: h))
+            handle(sx: 1, sy: 1, in: CGSize(width: w, height: h))
         }
         .frame(width: w, height: h)
         .position(x: box.rect.minX * canvas.width + w / 2, y: box.rect.minY * canvas.height + h / 2)
+    }
+
+    /// Dark line under a light dashed one, so the frame shows on white and black alike.
+    private var outline: some View {
+        ZStack {
+            Rectangle().strokeBorder(Color.black.opacity(0.55), lineWidth: 2.5)
+            Rectangle()
+                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                .foregroundStyle(isSelected ? Color.accentColor : Color.white)
+        }
+    }
+
+    /// A corner dot with a generous hit area. `sx`/`sy` are -1 for the left/top
+    /// edge and +1 for the right/bottom: the corner moves, the opposite one stays.
+    private func handle(sx: CGFloat, sy: CGFloat, in size: CGSize) -> some View {
+        Circle()
+            .fill(isSelected ? Color.accentColor : Color.white)
+            .overlay(Circle().stroke(isSelected ? Color.white : Color.black.opacity(0.7), lineWidth: 1.5))
+            .frame(width: 11, height: 11)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
+                    .onChanged { value in
+                        if resizeStart == nil { resizeStart = box.rect; onSelect() }
+                        guard let start = resizeStart else { return }
+                        let dx = value.translation.width / canvas.width
+                        let dy = value.translation.height / canvas.height
+                        var (l, r, t, b) = (start.minX, start.maxX, start.minY, start.maxY)
+                        if sx < 0 { l = min(max(l + dx, 0), r - minSide) } else { r = min(max(r + dx, l + minSide), 1) }
+                        if sy < 0 { t = min(max(t + dy, 0), b - minSide) } else { b = min(max(b + dy, t + minSide), 1) }
+                        box.rect = CGRect(x: l, y: t, width: r - l, height: b - t)
+                    }
+                    .onEnded { _ in resizeStart = nil }
+            )
+            .position(x: size.width / 2 + sx * (size.width / 2 - inset),
+                      y: size.height / 2 + sy * (size.height / 2 - inset))
     }
 }
