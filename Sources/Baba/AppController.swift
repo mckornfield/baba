@@ -90,6 +90,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         if NSApp.currentEvent?.type == .rightMouseUp {
             let menu = NSMenu()
             menu.addItem(withTitle: "Download Memes…", action: #selector(download), keyEquivalent: "").target = self
+            menu.addItem(withTitle: "Add Your Own Images…", action: #selector(openCustomFolder), keyEquivalent: "").target = self
             menu.addItem(withTitle: "Open Template Folder", action: #selector(openFolder), keyEquivalent: "").target = self
             menu.addItem(withTitle: "Reload Templates", action: #selector(reload), keyEquivalent: "").target = self
             menu.addItem(.separator())
@@ -107,6 +108,11 @@ final class AppController: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(Library.root)
     }
 
+    @objc private func openCustomFolder() {
+        try? FileManager.default.createDirectory(at: Library.customFolder, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(Library.customFolder)
+    }
+
     @objc private func download() { Crawler.shared.start() }
 
     @objc private func reload() { Library.shared.reload() }
@@ -119,6 +125,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func showPopover() {
         guard let button = statusItem.button else { return }
+        Library.shared.reload()  // picks up images dropped into the custom folder
         Session.shared.opened()
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)

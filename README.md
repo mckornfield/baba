@@ -26,6 +26,14 @@ Needs the Swift toolchain (Xcode or Command Line Tools). `build.sh` falls back
 to the 26.5 SDK when only the Command Line Tools are installed, because the
 newest SDK there lacks the SwiftUI macro plugin.
 
+## Adding your own images
+
+Drop any image (png, jpg, gif, webp, heic…) into `~/Library/Application Support/Baba/custom/`
+(right-click the menu bar icon → **Add Your Own Images…** opens it). It shows up
+in the grid the next time you open the panel, named after the file
+(`distracted_boyfriend.jpg` → "distracted boyfriend"), newest first. Delete the
+file to remove it.
+
 ## Using it
 
 - The search box has focus on open; ↵ picks the first match. Recently used
