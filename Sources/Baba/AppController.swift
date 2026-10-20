@@ -23,7 +23,7 @@ final class AppController: NSObject, NSApplicationDelegate {
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.toolTip = "Baba — ⌥⌘M"
+            button.toolTip = "Baba — ⌃⌥⌘B"
         }
 
         let root = ContentView()

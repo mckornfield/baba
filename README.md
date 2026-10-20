@@ -1,7 +1,7 @@
 # Baba
 
 A local meme generator for macOS, in the shape of [Yaga](https://github.com/marcusds/yaga): a menu bar
-app. Hit **⌥⌘M**, pick a template, type the caption, then **copy** or **drag the
+app. Hit **⌃⌥⌘B**, pick a template, type the caption, then **copy** or **drag the
 finished meme straight into** a chat box. Templates are downloaded once from
 imgflip and live on disk, so it works offline.
 
