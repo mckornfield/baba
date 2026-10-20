@@ -83,11 +83,12 @@ def main() -> int:
     full_dir.mkdir(parents=True, exist_ok=True)
     thumb_dir.mkdir(parents=True, exist_ok=True)
 
-    # IDs in excluded.txt (one per line, '#' starts a comment) are never fetched.
-    excluded = args.dest / "excluded.txt"
+    # IDs in excluded.txt (one per line, '#' starts a comment) are never fetched:
+    # the repo's default list plus any in the destination folder.
     seen = set()
-    if excluded.exists():
-        seen = {l.split("#")[0].strip() for l in excluded.read_text().splitlines()} - {""}
+    for excluded in (Path(__file__).parent.parent / "Resources" / "excluded.txt", args.dest / "excluded.txt"):
+        if excluded.exists():
+            seen |= {l.split("#")[0].strip() for l in excluded.read_text().splitlines()} - {""}
     entries = []
     page = 1
     while len(entries) < args.count:

@@ -26,6 +26,14 @@ Needs the Swift toolchain (Xcode or Command Line Tools). `build.sh` falls back
 to the 26.5 SDK when only the Command Line Tools are installed, because the
 newest SDK there lacks the SwiftUI macro plugin.
 
+## Hiding templates
+
+`Resources/excluded.txt` lists imgflip IDs (one per line, `#` for comments) that
+are hidden from the grid and never downloaded; it ships inside the app. To hide
+more on your own Mac, add IDs to `excluded.txt` in the library folder
+(`~/Library/Application Support/Baba/`), then right-click the menu bar icon →
+**Reload Templates**.
+
 ## Adding your own images
 
 Drop any image (png, jpg, gif, webp, heic…) into `~/Library/Application Support/Baba/custom/`

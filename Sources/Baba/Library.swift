@@ -36,14 +36,21 @@ final class Library: ObservableObject {
     private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "heic", "tiff", "bmp"]
 
     /// Template IDs listed in `excluded.txt` (one per line, `#` starts a comment)
-    /// are hidden from the grid and skipped by the crawler.
+    /// are hidden from the grid and skipped by the crawler. The list shipped in
+    /// the app bundle is combined with one in the library folder.
     static func excludedIDs() -> Set<String> {
-        let text = (try? String(contentsOf: root.appendingPathComponent("excluded.txt"), encoding: .utf8)) ?? ""
-        return Set(text.split(whereSeparator: \.isNewline).compactMap { line in
-            let id = line.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first?
-                .trimmingCharacters(in: .whitespaces) ?? ""
-            return id.isEmpty ? nil : id
-        })
+        let files = [Bundle.main.url(forResource: "excluded", withExtension: "txt"),
+                     root.appendingPathComponent("excluded.txt")]
+        var ids = Set<String>()
+        for case let url? in files {
+            let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            for line in text.split(whereSeparator: \.isNewline) {
+                let id = line.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first?
+                    .trimmingCharacters(in: .whitespaces) ?? ""
+                if !id.isEmpty { ids.insert(id) }
+            }
+        }
+        return ids
     }
 
     private init() { reload() }

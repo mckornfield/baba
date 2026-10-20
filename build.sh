@@ -22,6 +22,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Baba"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp Resources/excluded.txt "$APP/Contents/Resources/excluded.txt"
 if [ -f Resources/AppIcon.icns ]; then
   cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
