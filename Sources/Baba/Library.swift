@@ -35,12 +35,24 @@ final class Library: ObservableObject {
 
     private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "heic", "tiff", "bmp"]
 
+    /// Template IDs listed in `excluded.txt` (one per line, `#` starts a comment)
+    /// are hidden from the grid and skipped by the crawler.
+    static func excludedIDs() -> Set<String> {
+        let text = (try? String(contentsOf: root.appendingPathComponent("excluded.txt"), encoding: .utf8)) ?? ""
+        return Set(text.split(whereSeparator: \.isNewline).compactMap { line in
+            let id = line.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first?
+                .trimmingCharacters(in: .whitespaces) ?? ""
+            return id.isEmpty ? nil : id
+        })
+    }
+
     private init() { reload() }
 
     func reload() {
         let data = try? Data(contentsOf: Self.root.appendingPathComponent("index.json"))
         let crawled = data.flatMap { try? JSONDecoder().decode([Template].self, from: $0) } ?? []
-        templates = Self.scanCustom() + crawled
+        let excluded = Self.excludedIDs()
+        templates = Self.scanCustom() + crawled.filter { !excluded.contains($0.id) }
     }
 
     private static func scanCustom() -> [Template] {

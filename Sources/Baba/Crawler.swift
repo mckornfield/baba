@@ -44,7 +44,7 @@ final class Crawler: ObservableObject {
         try fm.createDirectory(at: root.appendingPathComponent("thumbs"), withIntermediateDirectories: true)
 
         var entries: [Template] = []
-        var seen = Set<String>()
+        var seen = Library.excludedIDs()
         var page = 1
         while entries.count < count {
             try Task.checkCancellation()

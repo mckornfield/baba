@@ -83,7 +83,12 @@ def main() -> int:
     full_dir.mkdir(parents=True, exist_ok=True)
     thumb_dir.mkdir(parents=True, exist_ok=True)
 
-    entries, seen = [], set()
+    # IDs in excluded.txt (one per line, '#' starts a comment) are never fetched.
+    excluded = args.dest / "excluded.txt"
+    seen = set()
+    if excluded.exists():
+        seen = {l.split("#")[0].strip() for l in excluded.read_text().splitlines()} - {""}
+    entries = []
     page = 1
     while len(entries) < args.count:
         page_html = fetch(f"https://imgflip.com/memetemplates?page={page}").decode("utf-8", "replace")
